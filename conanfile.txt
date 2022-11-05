@@ -1,0 +1,6 @@
+[requires]
+poco/1.12.2
+cxxopts/3.0.0
+
+[generators]
+cmake
