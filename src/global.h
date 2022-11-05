@@ -13,3 +13,8 @@ using std::shared_ptr;
 using std::make_shared;
 using std::string;
 using namespace m1;
+
+class Global {
+public:
+	static Logger logger;
+};

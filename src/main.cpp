@@ -14,8 +14,7 @@ void PrintHelp() {
 }
 
 int main(int argc, char* argv[]) {
-	Logger logger{ make_shared<StdTimeSource>() };
-	logger.AddLogDestination(make_shared<ConsoleLogDestination>());
+	Global::logger.AddLogDestination(make_shared<ConsoleLogDestination>());
 
 	cxxopts::Options options("DevHelper", "Development auxiliary tool");
 	options.add_options()
@@ -35,12 +34,12 @@ int main(int argc, char* argv[]) {
 		}
 		catch (Poco::Exception& e) {
 			string log = "Poco Exception: " + string(e.what());
-			logger.Log(e.what());
-			logger.Log(e.message());
+			Global::logger.Log(e.what());
+			Global::logger.Log(e.message());
 		}
 		catch (std::exception& e) {
 			string log = "Exception: " + string(e.what());
-			logger.LogError(log);
+			Global::logger.LogError(log);
 		}
 		doSomething = true;
 	}
@@ -48,6 +47,12 @@ int main(int argc, char* argv[]) {
 	if (result.count("pullzip") > 0) {
 		string pullDir = result["pullzip"].as<string>();
 		services.push_back( std::shared_ptr<Puller>( new Puller(pullDir, "origin", "master") ) );
+		doSomething = true;
+	}
+
+	if (!doSomething) {
+		PrintHelp();
+		return 0;
 	}
 
 	if (services.size() > 0) {
@@ -58,9 +63,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	if (!doSomething) {
-		PrintHelp();
-	}
 
 	return 0;
 }

@@ -7,6 +7,6 @@ project(DevHelper LANGUAGES CXX)
 include(build/conanbuildinfo.cmake)
 conan_basic_setup()
 
-add_executable(DevHelper src/main.cpp src/Puller.h src/Pusher.h src/global.h "src/Pusher.cpp")
+add_executable(DevHelper src/main.cpp src/Puller.h src/Pusher.h src/global.h "src/Pusher.cpp" "src/global.cpp")
 target_include_directories(DevHelper PUBLIC F:/DEV/C++/Libraries/M1Libraries2/include)
 target_link_libraries(DevHelper PUBLIC ${CONAN_LIBS})
