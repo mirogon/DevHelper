@@ -24,7 +24,18 @@ int main(int argc, char* argv[]) {
 
 	if (result.count("pushzip") > 0) {
 		string pushDir = result["pushzip"].as<string>();
-		Pusher p(pushDir);
+		try{
+			Pusher p(pushDir);
+		}
+		catch (Poco::Exception& e) {
+			string log = "Poco Exception: " + string(e.what());
+			logger.Log(e.what());
+			logger.Log(e.message());
+		}
+		catch (std::exception& e) {
+			string log = "Exception: " + string(e.what());
+			logger.LogError(log);
+		}
 	}
 
 	if (result.count("pullzip") > 0) {
@@ -33,6 +44,9 @@ int main(int argc, char* argv[]) {
 	}
 
 	while (true) {
+		if (services.size() == 0) {
+			break;
+		}
 		for (auto s : services) {
 			s->Update();
 		}

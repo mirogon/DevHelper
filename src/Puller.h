@@ -21,24 +21,25 @@ public:
 	}
 
 	void Update() {
-		if (pullTimer.ElapsedSec() >= 10) {
+		if (pullTimer.ElapsedSec() >= 20) {
 			PullUpdates(remoteName, branchName);
-			pullTimer.Restart();
 		}
 	}
 
 private:
 	void PullUpdates(const string& remoteName, const string& branchName) {
-		string pullCmd = "git -C " + dir + " " + remoteName + " " + branchName;
+		string pullCmd = "git -C " + dir + " stash";
 		system(pullCmd.c_str());
 		std::this_thread::sleep_for(std::chrono::seconds(5));
-		pullCmd = "git pull " + remoteName + " " + branchName + " -C " + dir;
+		pullCmd = "git -C " + dir + " pull " + remoteName + " " + branchName;
 		system(pullCmd.c_str());
+		std::this_thread::sleep_for(std::chrono::seconds(10));
 
 		//Unzip
 		std::ifstream zipStream("binaries.zip", std::ios::binary);
 		Poco::Zip::Decompress d(zipStream, dir);
 		d.decompressAllFiles();
+		pullTimer.Restart();
 	}
 };
 
