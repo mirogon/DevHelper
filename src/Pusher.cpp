@@ -5,11 +5,12 @@
 #include "Poco//Process.h"
 
 Pusher::Pusher(string dir) {
-	//Compress files
+	this->dir = dir;
+	this->binariesZipPath = dir + "/binaries.zip";
 
-	std::cout << dir;
-	string path = dir + "/binaries.zip";
-	std::ofstream zipFile(path, std::ios::binary);
+	DeleteZip();
+
+	std::ofstream zipFile(binariesZipPath, std::ios::binary);
 	Poco::Zip::Compress c(zipFile, true);
 
 	Poco::DirectoryIterator it(dir);
@@ -43,4 +44,11 @@ Pusher::Pusher(string dir) {
 	args = { "-C", dir, "push","origin", "master"};
 	Poco::ProcessHandle ph3 = Poco::Process::launch("git", args, 0, &outPipe, 0);
 	ph3.wait();
+}
+
+void Pusher::DeleteZip() {
+	Poco::File f(binariesZipPath);
+	if (f.exists()) {
+		f.remove();
+	}
 }

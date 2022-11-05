@@ -9,6 +9,10 @@
 * 2. DevHelper pushzip <dir>: (once) Create a zip containing all files in dir, add, commit, push the zip
 */
 
+void PrintHelp() {
+	std::cout << "Usage: DevHelper pullzip <dir> or DevHelper pushzip <dir>\n";
+}
+
 int main(int argc, char* argv[]) {
 	Logger logger{ make_shared<StdTimeSource>() };
 	logger.AddLogDestination(make_shared<ConsoleLogDestination>());
@@ -19,6 +23,8 @@ int main(int argc, char* argv[]) {
 		("pushzip", "Create a zip containing all files in dir, add, commit, push the zip", cxxopts::value<string>());
 
 	auto result = options.parse(argc, argv);
+
+	bool doSomething = false;
 
 	std::vector<UpdatablePtr> services = std::vector<UpdatablePtr>();
 
@@ -36,6 +42,7 @@ int main(int argc, char* argv[]) {
 			string log = "Exception: " + string(e.what());
 			logger.LogError(log);
 		}
+		doSomething = true;
 	}
 
 	if (result.count("pullzip") > 0) {
@@ -43,13 +50,16 @@ int main(int argc, char* argv[]) {
 		services.push_back( std::shared_ptr<Puller>( new Puller(pullDir, "origin", "master") ) );
 	}
 
-	while (true) {
-		if (services.size() == 0) {
-			break;
+	if (services.size() > 0) {
+		while (true) {
+			for (auto s : services) {
+				s->Update();
+			}
 		}
-		for (auto s : services) {
-			s->Update();
-		}
+	}
+
+	if (!doSomething) {
+		PrintHelp();
 	}
 
 	return 0;
