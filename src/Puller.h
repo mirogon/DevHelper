@@ -1,9 +1,12 @@
 #include "global.h"
+#include <sstream>
 #include "IUpdatable.h"
 #include "Poco/Zip/Decompress.h"
 #include "Poco/Pipe.h"
 #include "Poco/Process.h"
 #include "Poco/DirectoryIterator.h"
+#include "Poco/StreamCopier.h"
+#include "Poco/PipeStream.h"
 
 class Puller : public IUpdatable{
 private:
@@ -11,7 +14,6 @@ private:
 	string remoteName;
 	string branchName;
 	Timer pullTimer;
-	bool firstUpdate;
 
 public:
 
@@ -21,31 +23,28 @@ public:
 		this->dir = dir;
 		this->remoteName = remoteName;
 		this->branchName = branchName;
-		firstUpdate = true;
 		pullTimer.Restart();
 	}
 
 	void Update() {
-		if (pullTimer.ElapsedSec() >= 50 || firstUpdate) {
-			firstUpdate = false;
-			Global::logger.Log("Update...");
-			PullUpdates(remoteName, branchName);
+		if (pullTimer.ElapsedSec() >= 5 ) {
+			if (NewUpdateAvailable()) {
+				PullUpdates(remoteName, branchName);
+			}
 		}
 	}
 
 private:
 	void PullUpdates(const string& remoteName, const string& branchName) {
-		Global::logger.Log("PullUpdates");
-		//RemoveFiles();
-		Global::logger.Log("Removed Files");
+		RemoveFiles();
 
-		std::vector<string> args{ "-C", dir, "stash" };
-		Poco::ProcessHandle ph = Poco::Process::launch("git", args, 0, 0, 0);
-		ph.wait();
-		Global::logger.Log("Stashed");
+		std::vector<string> args = { "-C", dir, "stash" };
+		Poco::ProcessHandle phGitStash = Poco::Process::launch("git", args, 0, 0, 0);
+		phGitStash.wait();
+
 		args = { "-C", dir, "pull", remoteName, branchName };
-		Poco::ProcessHandle ph2 = Poco::Process::launch("git", args, 0, 0, 0);
-		ph2.wait();
+		Poco::ProcessHandle phGitPull = Poco::Process::launch("git", args, 0, 0, 0);
+		phGitPull.wait();
 
 		//Unzip
 		std::ifstream zipStream(dir + "/binaries.zip", std::ios::binary);
@@ -54,6 +53,24 @@ private:
 		zipStream.close();
 
 		pullTimer.Restart();
+	}
+	bool NewUpdateAvailable() {
+		std::vector<string> args = { "-C", dir, "fetch"};
+		Poco::ProcessHandle phFetch = Poco::Process::launch("git", args, 0, 0, 0);
+		phFetch.wait();
+
+		args = { "-C", dir, "log", "HEAD..origin/master", "--oneline"};
+		Poco::Pipe gitLogPipe;
+		Poco::ProcessHandle phLog = Poco::Process::launch("git", args, 0, &gitLogPipe, 0);
+		Poco::PipeInputStream inputStream(gitLogPipe);
+		std::stringstream stringStream;
+		Poco::StreamCopier::copyStream(inputStream, stringStream);
+		phLog.wait();
+
+		if (stringStream.str().length() > 3) {
+			return true;
+		}
+		return false;
 	}
 	void RemoveFiles() {
 		Poco::DirectoryIterator it(dir);
@@ -70,6 +87,7 @@ private:
 					}
 				}
 			}
+			++it;
 		}
 
 	}
